@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  simple_deployment_pipeline:
+  deployment_pipeline:
     runs-on: ubuntu-20.04
     env:
       SKIP_PREFLIGHT_CHECK: true
@@ -57,7 +57,7 @@ jobs:
           avatarUrl: https://avatars.githubusercontent.com/u/44023180?s=40&v=4
           text: Job Failed
   tag_release:
-  needs: [simple_deployment_pipeline] #depends on the first job
+  needs: [deployment_pipeline] #depends on the first job
   runs-on: ubuntu-20.04
   steps:
     - uses: actions/checkout@v3
