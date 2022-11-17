@@ -8,6 +8,7 @@ const logger = require('./utils/logger')
 const blogRouter = require('./controller/blog')
 const usersRouter = require('./controller/users')
 const loginRouter = require('./controller/login')
+const healthCheckRouter = require('./controllers/health-check')
 const middleware = require('./utils/middleware')
 
 mongoose
@@ -32,6 +33,7 @@ app.use(middleware.tokenExtractor)
 app.use('/api/login', loginRouter)
 app.use('/api/blogs', blogRouter)
 app.use('/api/users', usersRouter)
+app.use('/health', healthCheckRouter)
 
 if (process.env.NODE_ENV === 'test') {
   const testingRouter = require('./controller/testing')
