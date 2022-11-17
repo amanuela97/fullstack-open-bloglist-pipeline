@@ -1,0 +1,58 @@
+name: Deployment pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize]
+
+jobs:
+  simple_deployment_pipeline:
+    runs-on: ubuntu-20.04
+    env:
+      SKIP_PREFLIGHT_CHECK: true
+      DB_URL: ${{ secrets.DB_URL }}
+      TEST_MONGO_URI: ${{secrets.TEST_MONGO_URI}}
+      PORT: ${{secrets.PORT}}
+      SECRET: ${{secrets.SECRET}}
+     steps:
+       - uses: actions/checkout@v3
+       - uses: actions/setup-node@v2
+         with:
+            node-version: '12.x'
+      - name: npm install
+        run: npm install && cd client &&  npm install
+      - name: lint
+        run: npm run lint && npm run lint:client
+      - name: build
+        run: npm run build:client
+      - name: test
+        run: npm run test:all
+      - name: e2e tests
+        uses: cypress-io/github-action@f5bea478b80a774068179089247f13d60abc5010
+        with:
+          start: npm run start:test
+          command: npm run test:e2e
+          wait-on: http://localhost:3000
+      - name: deploy to Heroku
+        if: ${{ github.event_name == 'push' && !contains(join(github.event.commits.*.message), '#skip')  }}
+        uses: akhileshns/heroku-deploy@fda0b67be579cf19e2cee78fc4affb7bd1a18899 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: fullstack-open-bloglist-pipeline # Must be unique in Heroku
+          heroku_email: babyzewdie@gmail.com
+          healthcheck: 'https://fullstack-open-bloglist-pipeline/health'
+          checkstring: 'ok'
+          delay: 5
+          rollbackonhealthcheckfailed: true
+      - name: The job has failed
+        if: ${{ failure() }}
+        uses: rjstone/discord-webhook-notify@v1
+        with:
+          severity: error
+          details: commit made by ${{ github.event.head_commit.committer.name }} failed
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          avatarUrl: https://avatars.githubusercontent.com/u/44023180?s=40&v=4
+          text: Job Failed
